@@ -1,0 +1,40 @@
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.dbmdl
+
+# Build output
+Debug/
+Release/
+x64/
+x86/
+build/
+bin/
+obj/
+*.exe
+*.dll
+*.obj
+*.o
+*.lib
+*.pdb
+*.ilk
+*.idb
+*.tlog
+*.lastbuildstate
+*.log
+
+# Caches
+.cache/
+CMakeCache.txt
+CMakeFiles/
+.vs/*/v16/ipch/
+*.VC.db
+*.opendb
+
+# macOS/Linux specific
+.DS_Store
+*.swp
+*~
