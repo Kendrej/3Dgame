@@ -16,9 +16,7 @@ bin/
 obj/
 *.exe
 *.dll
-*.obj
 *.o
-*.lib
 *.pdb
 *.ilk
 *.idb
