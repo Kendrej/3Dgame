@@ -18,6 +18,8 @@ public:
 	void setMine(int x, int y, int z);
 	int getCubeSize() { return size; }
 	bool isSurface(int x, int y, int z);
+	int countBombs(int x, int y, int z);
+	void setValue(int x, int y, int z, int value);
 
 	std::vector<std::vector<std::vector<Cell>>> cube;
 private:

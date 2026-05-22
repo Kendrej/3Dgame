@@ -24,6 +24,57 @@ bool Saper::isSurface(int x, int y, int z) {
 			z == 0 || z == maxIdx);
 }
 
+int Saper::countBombs(int x, int y, int z)
+{
+	int bombs =0;
+	int x_start=x-1,x_stop=x+1,y_start=y-1,y_stop=y+1,z_start=z-1,z_stop=z+1;
+	if (x == 0) {
+		x_start = 0;
+	}
+	else if (x == size - 1) {
+		x_stop = size-1;
+	}
+	if (y == 0) {
+		y_start = 0;
+	}
+	else if (y == size - 1) {
+		y_stop = size - 1;
+	}
+	if (z == 0) {
+		z_start = 0;
+	}
+	else if (z == size - 1) {
+		z_stop = size - 1;
+	}
+
+	for (int i = z_start; i <= z_stop; i++) {
+		for (int j = y_start; j <= y_stop; j++) {
+			for (int k = x_start; k <= x_stop; k++) {
+				if (i == z && j == y && k == x) continue;
+
+				// WARUNEK POWIERZCHNI: Prawda, jeœli s¹siad tworzy obok nas p³aszczyznê 3x3x1 
+				// na dowolnej zewnêtrznej œcianie, na której siê obecnie znajdujemy.
+				bool sameFace =
+					(i == z && (i == 0 || i == size - 1)) ||
+					(j == y && (j == 0 || j == size - 1)) ||
+					(k == x && (k == 0 || k == size - 1));
+
+				// Jeœli komórki dziel¹ tê sam¹ œcianê szeœcianu - sprawdzamy minê
+				if (sameFace) {
+					if (isMine(k, j, i)) {
+						bombs++;
+					}
+				}
+			}
+		}
+	}
+	return bombs;
+}
+
+void Saper::setValue(int x, int y, int z, int value){
+	cube[x][y][z].value = value;
+}
+
 void Saper::createSaper() {
 	
 	cube.resize(size, std::vector<std::vector<Cell>>(size, std::vector<Cell>(size)));
@@ -58,4 +109,13 @@ void Saper::createSaper() {
 			bombsPlaced++;
 		}
 	}
+
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+			for (int k = 0; k < size; k++) {
+				setValue(i,j,k, countBombs(i,j,k));
+			}
+		}
+	}
+
 }
