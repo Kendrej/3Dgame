@@ -15,7 +15,7 @@
 
 #include "saper.h"
 
-Saper saperGame;
+Saper saperGame(5);
 
 float speed_x = 0;//[radiany/s]
 float speed_y = 0;//[radiany/s]
@@ -25,6 +25,12 @@ float current_angle_y = 0.0f;
 
 GLuint tex;
 GLuint unmasked;
+GLuint one;
+GLuint two;
+GLuint three;
+GLuint four;
+GLuint five;
+GLuint bomb;
 
 
 //Procedura obsługi błędów
@@ -92,32 +98,27 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		M = glm::rotate(M, current_angle_y, glm::vec3(0.0f, 1.0f, 0.0f));
 		M = glm::rotate(M, current_angle_x, glm::vec3(1.0f, 0.0f, 0.0f));
 
-		int gridSize = saperGame.saperCube.facade[0].size;
-		float spacing = 1.03f;
+		int gridSize = saperGame.getCubeSize();
+		float spacing = 1.01f;
 		float offset = (gridSize - 1) * spacing / 2.0f;
 		float cubeRadius = offset;
 
 		float min_distance = 100000.0f;
-		int hit_f = -1, hit_y = -1, hit_x = -1;
+		int hit_z = -1, hit_y = -1, hit_x = -1;
 
 		// Sprawdzanie kolizji dla kazdego z 150 klocków
-		for (int f = 0; f < 6; f++) {
+		for (int z = 0; z < gridSize; z++) {
 			for (int y = 0; y < gridSize; y++) {
 				for (int x = 0; x < gridSize; x++) {
 
 					glm::mat4 Model_local = glm::mat4(1.0f);
 
-					// Ta sama sciezka macierzy co w drawScene
-					if (f == 0) Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius));
-					if (f == 1) { Model_local = glm::rotate(Model_local, glm::radians(180.0f), glm::vec3(0, 1, 0)); Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); }
-					if (f == 2) { Model_local = glm::rotate(Model_local, glm::radians(90.0f), glm::vec3(0, 1, 0)); Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); }
-					if (f == 3) { Model_local = glm::rotate(Model_local, glm::radians(-90.0f), glm::vec3(0, 1, 0)); Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); }
-					if (f == 4) { Model_local = glm::rotate(Model_local, glm::radians(90.0f), glm::vec3(1, 0, 0)); Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); }
-					if (f == 5) { Model_local = glm::rotate(Model_local, glm::radians(-90.0f), glm::vec3(1, 0, 0)); Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); }
-
+					
 					float pos_x = (x * spacing) - offset;
 					float pos_y = (y * spacing) - offset;
-					Model_local = glm::translate(Model_local, glm::vec3(pos_x, pos_y, 0.0f));
+					float pos_z = (z * spacing) - offset;
+
+					Model_local = glm::translate(Model_local, glm::vec3(pos_x, pos_y, pos_z));
 					Model_local = glm::scale(Model_local, glm::vec3(0.5f));
 
 					glm::mat4 finalMatrix = M * Model_local;
@@ -149,14 +150,14 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 					// Jesli uderzylo i stalo sie to blizej uzytkownika niz poprzednie klocki
 					if (intersect && tMin < min_distance) {
 						min_distance = tMin;
-						hit_f = f; hit_y = y; hit_x = x;
+						hit_z = z; hit_y = y; hit_x = x;
 					}
 				}
 			}
 		}
 
-		if (hit_f != -1) {
-			saperGame.saperCube.facade[hit_f].face[hit_y][hit_x].isHidden = false;
+		if (hit_z != -1) {
+			saperGame.cube[hit_x][hit_y][hit_z].isHidden = false;
 		}
 	}
 }
@@ -194,6 +195,12 @@ void initOpenGLProgram(GLFWwindow* window) {
 	glfwSetMouseButtonCallback(window, mouse_button_callback); // Zarejestrowanie obslugi myszki!
 	tex = readTexture("assets/masked_tile.png");
 	unmasked = readTexture("assets/revealed_tile.png");
+	one = readTexture("assets/revealed_tile_1.png");
+	two = readTexture("assets/revealed_tile_2.png");
+	three = readTexture("assets/revealed_tile_3.png");
+	four = readTexture("assets/revealed_tile_4.png");
+	five = readTexture("assets/revealed_tile_5.png");
+	bomb = readTexture("assets/revealed_tile_bomb.png");
 }
 
 
@@ -230,6 +237,23 @@ void texKostka(glm::mat4 P, glm::mat4 V, glm::mat4 M, GLuint currentTex) {
 	glDisableVertexAttribArray(spTextured->a("color"));
 }
 
+GLuint texToDraw(Cell cell) {
+	if (cell.isHidden) return tex;
+	else if (cell.isBomb) return bomb;
+	else {
+		switch (cell.value) {
+		case 0: return unmasked;
+		case 1: return one;
+		case 2: return two;
+		case 3: return three;
+		case 4: return four;
+		case 5: return five;
+		default: return unmasked;
+		}
+	}
+}
+
+
 //Procedura rysująca zawartość sceny
 void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 	//************Tutaj umieszczaj kod rysujący obraz******************l
@@ -242,38 +266,32 @@ void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 	glm::mat4 P = glm::perspective(glm::radians(50.0f), 1.0f, 1.0f, 50.0f); //Wylicz macierz rzutowania
 
 	// Wymiary z naszego sapera (5x5, 6 scian)
-	int gridSize = saperGame.saperCube.facade[0].size; // np. 5
-	float spacing = 1.03f; // Minimalny odstęp, by uniknąć wylatywania krawędzi poza model
+	int gridSize = saperGame.getCubeSize(); // np. 5
+	float spacing = 1.01f; // Minimalny odstęp, by uniknąć wylatywania krawędzi poza model
 	float offset = (gridSize - 1) * spacing / 2.0f; // żeby wyśrodkować względem zera
 	float cubeRadius = offset; // <-- NAPRAWIONE! Odległość ściany od środka równa perfekcyjnie wpasowanej siatce na rogach
 
 	// Renderowanie scian kostki
-	for (int f = 0; f < 6; f++) {
+	for (int z = 0; z < gridSize; z++) {
 		for (int y = 0; y < gridSize; y++) {
 			for (int x = 0; x < gridSize; x++) {
 
 				glm::mat4 Model_local = glm::mat4(1.0f);
 
-				// Ustawienie scian (obracamy w zaleznosci od numeru 'f')
-				if (f == 0) Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); // Przod
-				if (f == 1) { Model_local = glm::rotate(Model_local, glm::radians(180.0f), glm::vec3(0, 1, 0)); Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); } // Tyl
-				if (f == 2) { Model_local = glm::rotate(Model_local, glm::radians(90.0f), glm::vec3(0, 1, 0)); Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); } // Prawa
-				if (f == 3) { Model_local = glm::rotate(Model_local, glm::radians(-90.0f), glm::vec3(0, 1, 0)); Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); } // Lewa
-				if (f == 4) { Model_local = glm::rotate(Model_local, glm::radians(90.0f), glm::vec3(1, 0, 0)); Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); } // Gora
-				if (f == 5) { Model_local = glm::rotate(Model_local, glm::radians(-90.0f), glm::vec3(1, 0, 0)); Model_local = glm::translate(Model_local, glm::vec3(0.0f, 0.0f, cubeRadius)); } // Dol
-
 				// Przesuniecie wzgledem srodka sciany, aby wygenerowac siatke (x, y)
 				float pos_x = (x * spacing) - offset;
 				float pos_y = (y * spacing) - offset;
+				float pos_z = (z * spacing) - offset;
 
-				Model_local = glm::translate(Model_local, glm::vec3(pos_x, pos_y, 0.0f));
+				Model_local = glm::translate(Model_local, glm::vec3(pos_x, pos_y, pos_z));
 
 				// Skalowanie malej komorki
 				Model_local = glm::scale(Model_local, glm::vec3(0.5f)); // Troche pomniejszamy bazowy model myCube
 
 				// Rysowanie zaleznie od odkrycia komorki
-				Cell currentCell = saperGame.saperCube.facade[f].face[y][x];
-				GLuint textureToDraw = currentCell.isHidden ? tex : unmasked;
+				Cell currentCell = saperGame.cube[x][y][z];
+				GLuint textureToDraw = texToDraw(currentCell);
+				
 
 				texKostka(P, V, M * Model_local, textureToDraw);
 			}

@@ -8,24 +8,19 @@ struct Cell
 	bool isHidden = true; // Informuje, czy kafelek zostal juz odkryty
 };
 
-struct Facade
-{
-	std::vector<std::vector<Cell>> face;
-	int size = 5;
-};
-
-struct SaperCube
-{
-	int size = 6;
-	std::vector<Facade> facade;
-};
-
 class Saper
 {
 public:
-	Saper();
+	Saper(int size);
 	~Saper();
-	SaperCube saperCube;
+	
+	bool isMine(int x, int y, int z);
+	void setMine(int x, int y, int z);
+	int getCubeSize() { return size; }
+	bool isSurface(int x, int y, int z);
+
+	std::vector<std::vector<std::vector<Cell>>> cube;
 private:
+	int size = 5;
 	void createSaper();
 };
