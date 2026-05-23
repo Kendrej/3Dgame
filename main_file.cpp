@@ -14,6 +14,10 @@
 #include "lodepng.h"
 #include "shaderprogram.h"
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
+
 #include "saper.h"
 
 int cubeSize = 5;
@@ -86,6 +90,10 @@ void key_callback(
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+	if (ImGui::GetIO().WantCaptureMouse) {
+		return;
+	}
+	
 	if ((button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_PRESS)
 	{
 		double xpos, ypos;
@@ -270,11 +278,30 @@ void initOpenGLProgram(GLFWwindow* window) {
 	explosion = readTexture("assets/tile_exploded.png");
 	defused = readTexture("assets/tile_defused.png");
 	notMine = readTexture("assets/tile_not_mine.png");
+
+	// --- INICJALIZACJA IMGUI ---
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+	// Ciemny, nowoczesny motyw wizualny
+	ImGui::StyleColorsDark();
+
+	// Powiązanie z Twoim oknem GLFW i wersją OpenGL
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 330");
 }
 
 
 //Zwolnienie zasobów zajętych przez program
 void freeOpenGLProgram(GLFWwindow* window) {
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
+	freeShaders();
+	glDeleteTextures(1, &tex);
+
 	freeShaders();
 	//************Tutaj umieszczaj kod, który należy wykonać po zakończeniu pętli głównej************
 	glDeleteTextures(1, &tex);
@@ -385,7 +412,7 @@ void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 	}
 	
 
-	glfwSwapBuffers(window); //Skopiuj bufor tylny do bufora przedniego
+	//glfwSwapBuffers(window); //Skopiuj bufor tylny do bufora przedniego
 }
 
 int main(void)
@@ -436,7 +463,26 @@ int main(void)
 		current_angle_y = angle_y; // Aktualizuj dla raycastu!
 
 		glfwSetTime(0); //Wyzeruj licznik czasu
+
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+
+		ImGui::Begin("Moje Pierwsze Okno");
+
+		ImGui::Text("Siemanko! To jest czyste okienko ImGui.");
+		ImGui::Text("Twoje zmienne do zabawy: cubeSize (%d), bomsAmount (%d)", cubeSize, bomsAmount);
+
+		ImGui::End();
+
 		drawScene(window, angle_x, angle_y); //Wykonaj procedurę rysującą
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		glfwSwapBuffers(window);
+
 		glfwPollEvents();
 	}
 
