@@ -49,16 +49,16 @@ void key_callback(
 ) {
 	if (action == GLFW_PRESS) {
 		if (key == GLFW_KEY_LEFT) {
-			speed_y = -PI;
-		}
-		if (key == GLFW_KEY_RIGHT) {
 			speed_y = PI;
 		}
+		if (key == GLFW_KEY_RIGHT) {
+			speed_y = -PI;
+		}
 		if (key == GLFW_KEY_UP) {
-			speed_x = -PI;
+			speed_x = PI;  // Zmienione z -PI na PI (lecimy kamerą do góry)
 		}
 		if (key == GLFW_KEY_DOWN) {
-			speed_x = PI;
+			speed_x = -PI; // Zmienione z PI na -PI (lecimy kamerą w dół)
 		}
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 			glfwSetWindowShouldClose(window, GL_TRUE);
@@ -87,24 +87,31 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		int width, height;
 		glfwGetWindowSize(window, &width, &height);
 
-		// Obliczanie wektora raycasting z myszki
+		// 1. ZWYKŁY Y, powrót do standardu myszki OpenGL
 		float x_ndc = (2.0f * xpos) / width - 1.0f;
 		float y_ndc = 1.0f - (2.0f * ypos) / height;
 
-		glm::mat4 P = glm::perspective(glm::radians(50.0f), 1.0f, 1.0f, 50.0f);
-		glm::mat4 V = glm::lookAt(glm::vec3(0.0f, 0.0f, -12.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		// 2. Naprawa odbitej osi: bazowe Z jest dodatnie w ostatniej linijce (12 zamiast -12)
+		glm::vec3 cam_pos = glm::vec3(
+			12.0f * cos(current_angle_x) * sin(current_angle_y),
+			12.0f * sin(current_angle_x),
+			12.0f * cos(current_angle_x) * cos(current_angle_y)
+		);
+
+		// 3. Wstrzyknięcie prawdziwych proporcji ekranu (width / height) zamiast 1.0f!!!
+		float ratio = (float)width / (float)height;
+		glm::mat4 P = glm::perspective(glm::radians(50.0f), ratio, 1.0f, 50.0f);
+		glm::mat4 V = glm::lookAt(cam_pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 		glm::vec4 ray_clip = glm::vec4(x_ndc, y_ndc, -1.0, 1.0);
 		glm::vec4 ray_eye = glm::inverse(P) * ray_clip;
 		ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0); // Wektor kierunkowy
 
 		glm::vec3 ray_wor = glm::normalize(glm::vec3(glm::inverse(V) * ray_eye));
-		glm::vec3 cam_pos = glm::vec3(0.0f, 0.0f, -12.0f); // Pozycja kamery w world space
 
 		// Macierz obrotu calej kostki
 		glm::mat4 M = glm::mat4(1.0f);
-		M = glm::rotate(M, current_angle_y, glm::vec3(0.0f, 1.0f, 0.0f));
-		M = glm::rotate(M, current_angle_x, glm::vec3(1.0f, 0.0f, 0.0f));
+		
 
 		int gridSize = saperGame->getCubeSize();
 		float spacing = 1.01f;
@@ -289,10 +296,20 @@ void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Wyczyść bufor koloru i bufor głębokości
 
 	glm::mat4 M = glm::mat4(1.0f); //Zainicjuj macierz modelu macierzą jednostkową
-	M = glm::rotate(M, angle_y, glm::vec3(0.0f, 1.0f, 0.0f)); //Pomnóż macierz modelu razy macierz obrotu o kąt angle wokół osi Y
-	M = glm::rotate(M, angle_x, glm::vec3(1.0f, 0.0f, 0.0f)); //Pomnóż macierz modelu razy macierz obrotu o kąt angle wokół osi X
-	glm::mat4 V = glm::lookAt(glm::vec3(0.0f, 0.0f, -12.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //Wylicz macierz widoku (oddalona kamera)
-	glm::mat4 P = glm::perspective(glm::radians(50.0f), 1.0f, 1.0f, 50.0f); //Wylicz macierz rzutowania
+
+	// Dodatnie Z w logice kamery, ujednolicone z nową myszką!
+	glm::vec3 cam_pos = glm::vec3(
+		12.0f * cos(angle_x) * sin(angle_y),
+		12.0f * sin(angle_x),
+		12.0f * cos(angle_x) * cos(angle_y)
+	);
+
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+	float ratio = (float)width / (float)height; // Proporcje ekranu
+
+	glm::mat4 V = glm::lookAt(cam_pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 P = glm::perspective(glm::radians(50.0f), ratio, 1.0f, 50.0f); // Rzutowanie z Ratio
 
 	// Wymiary z naszego sapera (5x5, 6 scian)
 	int gridSize = saperGame->getCubeSize(); // np. 5
@@ -371,12 +388,17 @@ int main(void)
 		angle_x += speed_x * glfwGetTime(); //Oblicz kąt o jaki obiekt obrócił się podczas poprzedniej klatki
 		angle_y += speed_y * glfwGetTime(); //Oblicz kąt o jaki obiekt obrócił się podczas poprzedniej klatki
 
+		// Blokuj wychylenie powyżej/poniżej 89 stopni (~1.55 radiana), 
+		// żeby kamera nie przeleciała wertykalnie na drugą stronę osi!
+		if (angle_x > 1.5f) angle_x = 1.5f;
+		if (angle_x < -1.5f) angle_x = -1.5f;
+
 		current_angle_x = angle_x; // Aktualizuj dla raycastu!
 		current_angle_y = angle_y; // Aktualizuj dla raycastu!
 
 		glfwSetTime(0); //Wyzeruj licznik czasu
 		drawScene(window, angle_x, angle_y); //Wykonaj procedurę rysującą
-		glfwPollEvents(); //Wykonaj procedury callback w zalezności od zdarzeń jakie zaszły.
+		glfwPollEvents();
 	}
 
 	freeOpenGLProgram(window);
