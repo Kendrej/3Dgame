@@ -129,7 +129,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		
 
 		int gridSize = saperGame->getCubeSize();
-		float spacing = 1.01f;
+		float spacing = 1.005f;
 		float offset = (gridSize - 1) * spacing / 2.0f;
 		float cubeRadius = offset;
 
@@ -220,6 +220,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	
 }
 
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+	glViewport(0, 0, width, height);
+}
+
 GLuint readTexture(const char* filename) {
 	GLuint tex;
 	glActiveTexture(GL_TEXTURE0);
@@ -263,6 +267,9 @@ void initOpenGLProgram(GLFWwindow* window) {
 	glEnable(GL_DEPTH_TEST); //Włącz test głębokości na pikselach
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetMouseButtonCallback(window, mouse_button_callback); // Zarejestrowanie obslugi myszki!
+
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
 	tex = readTexture("assets/masked_tile.png");
 	unmasked = readTexture("assets/revealed_tile.png");
 	one = readTexture("assets/revealed_tile_1.png");
@@ -380,7 +387,7 @@ void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 
 	// Wymiary z naszego sapera (5x5, 6 scian)
 	int gridSize = saperGame->getCubeSize(); // np. 5
-	float spacing = 1.01f; // Minimalny odstęp, by uniknąć wylatywania krawędzi poza model
+	float spacing = 1.005f; // Minimalny odstęp, by uniknąć wylatywania krawędzi poza model
 	float offset = (gridSize - 1) * spacing / 2.0f; // żeby wyśrodkować względem zera
 	float cubeRadius = offset; // <-- NAPRAWIONE! Odległość ściany od środka równa perfekcyjnie wpasowanej siatce na rogach
 
