@@ -5,7 +5,8 @@ struct Cell
 {
 	int value = 1;
 	bool isBomb = false;
-	bool isHidden = true; // Informuje, czy kafelek zostal juz odkryty
+	bool isHidden = true;
+	bool isFlagged = false;
 };
 
 class Saper

@@ -31,7 +31,7 @@ GLuint three;
 GLuint four;
 GLuint five;
 GLuint bomb;
-
+GLuint flag;
 
 //Procedura obsługi błędów
 void error_callback(int error, const char* description) {
@@ -71,8 +71,10 @@ void key_callback(
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	if ((button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_PRESS)
 	{
+		printf("Wcisnieto: %s\n", button == GLFW_MOUSE_BUTTON_LEFT ? "LEWY" : "PRAWY");
+
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
 
@@ -155,11 +157,23 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 				}
 			}
 		}
-
-		if (hit_z != -1) {
-			saperGame.cube[hit_x][hit_y][hit_z].isHidden = false;
+		if (button == GLFW_MOUSE_BUTTON_LEFT) {
+			if (hit_z != -1) {
+				saperGame.cube[hit_x][hit_y][hit_z].isHidden = false;
+			}
+		}
+		else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+			if (hit_z != -1 && saperGame.cube[hit_x][hit_y][hit_z].isHidden) {
+				if (saperGame.cube[hit_x][hit_y][hit_z].isFlagged) {
+					saperGame.cube[hit_x][hit_y][hit_z].isFlagged = false;
+				}
+				else {
+					saperGame.cube[hit_x][hit_y][hit_z].isFlagged = true;
+				}
+			}
 		}
 	}
+	
 }
 
 GLuint readTexture(const char* filename) {
@@ -201,6 +215,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 	four = readTexture("assets/revealed_tile_4.png");
 	five = readTexture("assets/revealed_tile_5.png");
 	bomb = readTexture("assets/revealed_tile_bomb.png");
+	flag = readTexture("assets/masked_tile_flag.png");
 }
 
 
@@ -238,7 +253,8 @@ void texKostka(glm::mat4 P, glm::mat4 V, glm::mat4 M, GLuint currentTex) {
 }
 
 GLuint texToDraw(Cell cell) {
-	if (cell.isHidden) return tex;
+	if (cell.isFlagged) return flag;
+	else if (cell.isHidden) return tex;
 	else if (cell.isBomb) return bomb;
 	else {
 		switch (cell.value) {
