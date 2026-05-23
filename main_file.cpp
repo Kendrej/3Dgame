@@ -60,6 +60,12 @@ void key_callback(
 		if (key == GLFW_KEY_DOWN) {
 			speed_x = PI;
 		}
+		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+			glfwSetWindowShouldClose(window, GL_TRUE);
+		}
+		if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
+			saperGame = std::make_unique<Saper>(5, 15);
+		}
 	}
 	if (action == GLFW_RELEASE) {
 		if (key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT) {
@@ -159,12 +165,12 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		}
 		if (button == GLFW_MOUSE_BUTTON_LEFT) {
 			if (hit_z != -1) {
-				saperGame->setHidden(hit_x, hit_y, hit_z, false);
-				if (saperGame->isBomb(hit_x, hit_y, hit_z)) {
+				if (saperGame->isBomb(hit_x, hit_y, hit_z) && saperGame->isHidden(hit_x, hit_y, hit_z)) {
 					printf("BOOM! Game Over!\n");
 					saperGame->setExploded(hit_x, hit_y, hit_z, true);
 					saperGame->revealAll();
 				}
+				saperGame->setHidden(hit_x, hit_y, hit_z, false);
 			}
 		}
 		else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
