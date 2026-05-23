@@ -7,6 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <stdlib.h>
 #include <stdio.h>
+#include <memory>
 #include "myCube.h"
 #include "constants.h"
 #include "allmodels.h"
@@ -15,12 +16,12 @@
 
 #include "saper.h"
 
-Saper saperGame(5);
+std::unique_ptr<Saper> saperGame = std::make_unique<Saper>(5, 15);
 
-float speed_x = 0;//[radiany/s]
-float speed_y = 0;//[radiany/s]
+float speed_x = 0;
+float speed_y = 0;
 
-float current_angle_x = 0.0f; // Globalne katy do wykorzystania w testowaniu myszy
+float current_angle_x = 0.0f; 
 float current_angle_y = 0.0f;
 
 GLuint tex;
@@ -32,6 +33,7 @@ GLuint four;
 GLuint five;
 GLuint bomb;
 GLuint flag;
+GLuint explosion;
 
 //Procedura obsługi błędów
 void error_callback(int error, const char* description) {
@@ -73,8 +75,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 	if ((button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_PRESS)
 	{
-		printf("Wcisnieto: %s\n", button == GLFW_MOUSE_BUTTON_LEFT ? "LEWY" : "PRAWY");
-
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
 
@@ -100,7 +100,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		M = glm::rotate(M, current_angle_y, glm::vec3(0.0f, 1.0f, 0.0f));
 		M = glm::rotate(M, current_angle_x, glm::vec3(1.0f, 0.0f, 0.0f));
 
-		int gridSize = saperGame.getCubeSize();
+		int gridSize = saperGame->getCubeSize();
 		float spacing = 1.01f;
 		float offset = (gridSize - 1) * spacing / 2.0f;
 		float cubeRadius = offset;
@@ -159,16 +159,21 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		}
 		if (button == GLFW_MOUSE_BUTTON_LEFT) {
 			if (hit_z != -1) {
-				saperGame.cube[hit_x][hit_y][hit_z].isHidden = false;
+				saperGame->setHidden(hit_x, hit_y, hit_z, false);
+				if (saperGame->isBomb(hit_x, hit_y, hit_z)) {
+					printf("BOOM! Game Over!\n");
+					saperGame->setExploded(hit_x, hit_y, hit_z, true);
+					saperGame->revealAll();
+				}
 			}
 		}
 		else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-			if (hit_z != -1 && saperGame.cube[hit_x][hit_y][hit_z].isHidden) {
-				if (saperGame.cube[hit_x][hit_y][hit_z].isFlagged) {
-					saperGame.cube[hit_x][hit_y][hit_z].isFlagged = false;
+			if (hit_z != -1 && saperGame->isHidden(hit_x,hit_y,hit_z)) {
+				if (saperGame->isFlagged(hit_x, hit_y, hit_z)) {
+					saperGame->setFlagged(hit_x, hit_y, hit_z, false);
 				}
 				else {
-					saperGame.cube[hit_x][hit_y][hit_z].isFlagged = true;
+					saperGame->setFlagged(hit_x, hit_y, hit_z, true);
 				}
 			}
 		}
@@ -216,6 +221,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 	five = readTexture("assets/revealed_tile_5.png");
 	bomb = readTexture("assets/revealed_tile_bomb.png");
 	flag = readTexture("assets/masked_tile_flag.png");
+	explosion = readTexture("assets/tile_exploded.png");
 }
 
 
@@ -255,6 +261,7 @@ void texKostka(glm::mat4 P, glm::mat4 V, glm::mat4 M, GLuint currentTex) {
 GLuint texToDraw(Cell cell) {
 	if (cell.isFlagged) return flag;
 	else if (cell.isHidden) return tex;
+	else if (cell.exploded) return explosion;
 	else if (cell.isBomb) return bomb;
 	else {
 		switch (cell.value) {
@@ -282,7 +289,7 @@ void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 	glm::mat4 P = glm::perspective(glm::radians(50.0f), 1.0f, 1.0f, 50.0f); //Wylicz macierz rzutowania
 
 	// Wymiary z naszego sapera (5x5, 6 scian)
-	int gridSize = saperGame.getCubeSize(); // np. 5
+	int gridSize = saperGame->getCubeSize(); // np. 5
 	float spacing = 1.01f; // Minimalny odstęp, by uniknąć wylatywania krawędzi poza model
 	float offset = (gridSize - 1) * spacing / 2.0f; // żeby wyśrodkować względem zera
 	float cubeRadius = offset; // <-- NAPRAWIONE! Odległość ściany od środka równa perfekcyjnie wpasowanej siatce na rogach
@@ -305,7 +312,7 @@ void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 				Model_local = glm::scale(Model_local, glm::vec3(0.5f)); // Troche pomniejszamy bazowy model myCube
 
 				// Rysowanie zaleznie od odkrycia komorki
-				Cell currentCell = saperGame.cube[x][y][z];
+				Cell currentCell = saperGame->getCell(x, y, z);
 				GLuint textureToDraw = texToDraw(currentCell);
 				
 

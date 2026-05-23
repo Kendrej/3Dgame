@@ -1,18 +1,18 @@
 #include "saper.h"
 #include <random>
 
-Saper::Saper(int size): size(size) {
+Saper::Saper(int size, int bombAmount): size(size), bombs(bombAmount) {
 	createSaper();
 }
 
 Saper::~Saper() {
 }
 
-bool Saper::isMine(int x, int y, int z) {
+bool Saper::isBomb(int x, int y, int z) {
 	return cube[x][y][z].isBomb;
 }
 
-void Saper::setMine(int x, int y, int z) {
+void Saper::setBomb(int x, int y, int z) {
 	cube[x][y][z].isBomb = true;
 }
 
@@ -61,7 +61,7 @@ int Saper::countBombs(int x, int y, int z)
 
 				// Jeœli komórki dziel¹ tê sam¹ œcianê szeœcianu - sprawdzamy minê
 				if (sameFace) {
-					if (isMine(k, j, i)) {
+					if (isBomb(k, j, i)) {
 						bombs++;
 					}
 				}
@@ -75,19 +75,29 @@ void Saper::setValue(int x, int y, int z, int value){
 	cube[x][y][z].value = value;
 }
 
+void Saper::revealAll()
+{
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+			for (int k = 0; k < size; k++) {
+				setHidden(i, j, k, false);
+			}
+		}
+	}
+}
+
 void Saper::createSaper() {
 	
 	cube.resize(size, std::vector<std::vector<Cell>>(size, std::vector<Cell>(size)));
 
-	int bombsToPlace = 10;
 	int innerSize = size - 2;
 
 	if (innerSize < 0) {
 		innerSize =0;
 	}
 	int totalCells = (size * size * size) - (innerSize * innerSize * innerSize);
-	if (bombsToPlace > totalCells) {
-		bombsToPlace = totalCells;
+	if (bombs > totalCells) {
+		bombs = totalCells;
 	}
 
 	std::random_device rd;  // Inicjalizacja ziarna losowania
@@ -97,15 +107,15 @@ void Saper::createSaper() {
 	std::uniform_int_distribution<> dis(0, size - 1);
 
 	int bombsPlaced = 0;
-	while (bombsPlaced < bombsToPlace) {
+	while (bombsPlaced < bombs) {
 		// Zlosuj wspó³rzêdne w 3D
 		int x = dis(gen); // indek fasady/œciany
 		int y = dis(gen);  // wiersz
 		int z = dis(gen);  // kolumna
 
 		// SprawdŸ, czy w tym miejscu ju¿ nie ma bomby
-		if (!isMine(x,y,z) && isSurface(x,y,z)) { // <-- Zak³adam zmienn¹ "isMine", zmieñ na w³aœciw¹!
-			setMine(x,y,z); // <-- Postaw bombê
+		if (!isBomb(x,y,z) && isSurface(x,y,z)) { // <-- Zak³adam zmienn¹ "isMine", zmieñ na w³aœciw¹!
+			setBomb(x,y,z); // <-- Postaw bombê
 			bombsPlaced++;
 		}
 	}
