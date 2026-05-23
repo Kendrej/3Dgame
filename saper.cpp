@@ -80,11 +80,28 @@ void Saper::revealAll()
 	for (int i = 0; i < size; i++) {
 		for (int j = 0; j < size; j++) {
 			for (int k = 0; k < size; k++) {
+				if (isFlagged(i, j, k) && !isBomb(i, j, k)) {
+					setNotMine(i, j, k);
+				}
 				setHidden(i, j, k, false);
 			}
 		}
 	}
 }
+
+void Saper::defuse() {
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+			for (int k = 0; k < size; k++) {
+				if (isFlagged(i, j, k)) {
+					setDefused(i, j, k);
+					setFlagged(i, j, k, false);
+				}
+			}
+		}
+	}
+}
+
 
 void Saper::createSaper() {
 	
@@ -95,9 +112,9 @@ void Saper::createSaper() {
 	if (innerSize < 0) {
 		innerSize =0;
 	}
-	int totalCells = (size * size * size) - (innerSize * innerSize * innerSize);
-	if (bombs > totalCells) {
-		bombs = totalCells;
+	tilesInTotal = (size * size * size) - (innerSize * innerSize * innerSize);
+	if (bombs > tilesInTotal) {
+		bombs = tilesInTotal;
 	}
 
 	std::random_device rd;  // Inicjalizacja ziarna losowania

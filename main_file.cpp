@@ -16,7 +16,9 @@
 
 #include "saper.h"
 
-std::unique_ptr<Saper> saperGame = std::make_unique<Saper>(5, 15);
+int cubeSize = 4;
+int bomsAmount = 3;
+std::unique_ptr<Saper> saperGame = std::make_unique<Saper>(cubeSize, bomsAmount);
 
 float speed_x = 0;
 float speed_y = 0;
@@ -34,6 +36,8 @@ GLuint five;
 GLuint bomb;
 GLuint flag;
 GLuint explosion;
+GLuint defused;
+GLuint notMine;
 
 //Procedura obsługi błędów
 void error_callback(int error, const char* description) {
@@ -64,7 +68,7 @@ void key_callback(
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 		if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
-			saperGame = std::make_unique<Saper>(5, 15);
+			saperGame = std::make_unique<Saper>(cubeSize, bomsAmount);
 		}
 	}
 	if (action == GLFW_RELEASE) {
@@ -177,18 +181,29 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 					saperGame->setExploded(hit_x, hit_y, hit_z, true);
 					saperGame->revealAll();
 				}
-				saperGame->setHidden(hit_x, hit_y, hit_z, false);
+				else if(saperGame->isHidden(hit_x, hit_y, hit_z)){
+					saperGame->setHidden(hit_x, hit_y, hit_z, false);
+					saperGame->setTilesRevealed(saperGame->getTilesRevealed() + 1);
+				}
+				
 			}
 		}
 		else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
 			if (hit_z != -1 && saperGame->isHidden(hit_x,hit_y,hit_z)) {
 				if (saperGame->isFlagged(hit_x, hit_y, hit_z)) {
 					saperGame->setFlagged(hit_x, hit_y, hit_z, false);
+					saperGame->setFlagsInTotal(saperGame->getFlagsInTotal() - 1);
 				}
 				else {
 					saperGame->setFlagged(hit_x, hit_y, hit_z, true);
+					saperGame->setFlagsInTotal(saperGame->getFlagsInTotal() + 1);
 				}
 			}
+		}
+
+		if (saperGame->getFlagsInTotal() == saperGame->getBombs() && saperGame->getTilesRevealed() + saperGame->getFlagsInTotal() == saperGame->getTilesInTotal()) {
+			printf("Congratulations! You won!\n");
+			saperGame->defuse();
 		}
 	}
 	
@@ -235,6 +250,8 @@ void initOpenGLProgram(GLFWwindow* window) {
 	bomb = readTexture("assets/revealed_tile_bomb.png");
 	flag = readTexture("assets/masked_tile_flag.png");
 	explosion = readTexture("assets/tile_exploded.png");
+	defused = readTexture("assets/tile_defused.png");
+	notMine = readTexture("assets/tile_not_mine.png");
 }
 
 
@@ -272,7 +289,9 @@ void texKostka(glm::mat4 P, glm::mat4 V, glm::mat4 M, GLuint currentTex) {
 }
 
 GLuint texToDraw(Cell cell) {
-	if (cell.isFlagged) return flag;
+	if (cell.isDefused) return defused;
+	else if (cell.isNotMine) return notMine;
+	else if (cell.isFlagged) return flag;
 	else if (cell.isHidden) return tex;
 	else if (cell.exploded) return explosion;
 	else if (cell.isBomb) return bomb;
@@ -347,7 +366,6 @@ void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 
 	glfwSwapBuffers(window); //Skopiuj bufor tylny do bufora przedniego
 }
-
 
 int main(void)
 {
