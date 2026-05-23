@@ -16,8 +16,8 @@
 
 #include "saper.h"
 
-int cubeSize = 4;
-int bomsAmount = 3;
+int cubeSize = 5;
+int bomsAmount = 10;
 std::unique_ptr<Saper> saperGame = std::make_unique<Saper>(cubeSize, bomsAmount);
 
 float speed_x = 0;
@@ -33,6 +33,9 @@ GLuint two;
 GLuint three;
 GLuint four;
 GLuint five;
+GLuint six;
+GLuint seven;
+GLuint eight;
 GLuint bomb;
 GLuint flag;
 GLuint explosion;
@@ -219,6 +222,18 @@ GLuint readTexture(const char* filename) {
 	//Wczytaj obrazek
 	unsigned error = lodepng::decode(image, width, height, filename);
 
+	if (error) {
+		fprintf(stderr, "BLAD LodePNG: Nie udalo sie wczytac tekstury %s!\nLodePNG error: %s\n", filename, lodepng_error_text(error));
+		// Tworzymy małą, czerwoną teksturę ostrzegawczą w locie, żeby program się nie wysypał
+		unsigned char errorPixel[] = { 255, 0, 0, 255 };
+		glGenTextures(1, &tex);
+		glBindTexture(GL_TEXTURE_2D, tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, errorPixel);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		return tex;
+	}
+
 	//Import do pamięci karty graficznej
 	glGenTextures(1, &tex); //Zainicjuj jeden uchwyt
 	glBindTexture(GL_TEXTURE_2D, tex); //Uaktywnij uchwyt
@@ -247,6 +262,9 @@ void initOpenGLProgram(GLFWwindow* window) {
 	three = readTexture("assets/revealed_tile_3.png");
 	four = readTexture("assets/revealed_tile_4.png");
 	five = readTexture("assets/revealed_tile_5.png");
+	six = readTexture("assets/revealed_tile_6.png");
+	seven = readTexture("assets/revealed_tile_7.png");
+	eight = readTexture("assets/revealed_tile_8.png");
 	bomb = readTexture("assets/revealed_tile_bomb.png");
 	flag = readTexture("assets/masked_tile_flag.png");
 	explosion = readTexture("assets/tile_exploded.png");
@@ -303,6 +321,9 @@ GLuint texToDraw(Cell cell) {
 		case 3: return three;
 		case 4: return four;
 		case 5: return five;
+		case 6: return six;
+		case 7: return seven;
+		case 8: return eight;
 		default: return unmasked;
 		}
 	}
