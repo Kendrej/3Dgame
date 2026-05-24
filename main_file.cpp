@@ -197,6 +197,11 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 				else if(saperGame->isHidden(hit_x, hit_y, hit_z)){
 					saperGame->setHidden(hit_x, hit_y, hit_z, false);
 					saperGame->setTilesRevealed(saperGame->getTilesRevealed() + 1);
+					if (saperGame->getCell(hit_x, hit_y, hit_z).value == 0) {
+						int empty = 0;
+						saperGame->revealEmpty(hit_x, hit_y, hit_z, empty);
+						saperGame->setTilesRevealed(saperGame->getTilesRevealed() + empty);
+					}
 				}
 				
 			}
