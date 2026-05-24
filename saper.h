@@ -3,7 +3,7 @@
 
 struct Cell
 {
-	int value = 1;
+	int value = 0;
 	bool isBomb = false;
 	bool isHidden = true;
 	bool isFlagged = false;
@@ -47,10 +47,12 @@ public:
 	int getCubeSize() { return size; }
 	bool isSurface(int x, int y, int z);
 	int countBombs(int x, int y, int z);
+	int getValue(int x, int y, int z) { return cube[x][y][z].value; }
 	void setValue(int x, int y, int z, int value);
 	Cell getCell(int x, int y, int z) { return cube[x][y][z]; }
 	void revealAll();
 	void defuse();
+	void revealEmpty(int x, int y, int z, int &revealed);
 private:
 	int size = 5;
 	int bombs = 10;

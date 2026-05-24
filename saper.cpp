@@ -102,6 +102,51 @@ void Saper::defuse() {
 	}
 }
 
+void Saper::revealEmpty(int x, int y, int z ,int &revealed)
+{
+	int x_start = x - 1, x_stop = x + 1, y_start = y - 1, y_stop = y + 1, z_start = z - 1, z_stop = z + 1;
+	if (x == 0) {
+		x_start = 0;
+	}
+	else if (x == size - 1) {
+		x_stop = size - 1;
+	}
+	if (y == 0) {
+		y_start = 0;
+	}
+	else if (y == size - 1) {
+		y_stop = size - 1;
+	}
+	if (z == 0) {
+		z_start = 0;
+	}
+	else if (z == size - 1) {
+		z_stop = size - 1;
+	}
+
+	for (int i = z_start; i <= z_stop; i++) {
+		for (int j = y_start; j <= y_stop; j++) {
+			for (int k = x_start; k <= x_stop; k++) {
+				if (i == z && j == y && k == x) continue;
+
+				bool sameFace =
+					(i == z && (i == 0 || i == size - 1)) ||
+					(j == y && (j == 0 || j == size - 1)) ||
+					(k == x && (k == 0 || k == size - 1));
+
+				if (sameFace && isHidden(k, j, i) && !isFlagged(k, j, i)) {
+					setHidden(k, j, i, false);
+					revealed++;
+					if (getValue(k,j,i) == 0) {
+						revealEmpty(k,j,i,revealed);
+					}		
+				}
+			}
+		}
+	}
+
+}
+
 
 void Saper::createSaper() {
 	
