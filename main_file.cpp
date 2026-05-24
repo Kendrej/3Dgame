@@ -21,7 +21,7 @@
 #include "saper.h"
 
 int cubeSize = 5;
-int bomsAmount = 10;
+int bomsAmount = 15;
 std::unique_ptr<Saper> saperGame = std::make_unique<Saper>(cubeSize, bomsAmount);
 
 float speed_x = 0;
@@ -76,6 +76,8 @@ void key_callback(
 		}
 		if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
 			saperGame = std::make_unique<Saper>(cubeSize, bomsAmount);
+			current_angle_x = 0;
+			current_angle_y = 0;
 		}
 	}
 	if (action == GLFW_RELEASE) {
@@ -307,11 +309,22 @@ void freeOpenGLProgram(GLFWwindow* window) {
 	ImGui::DestroyContext();
 
 	freeShaders();
-	glDeleteTextures(1, &tex);
 
-	freeShaders();
-	//************Tutaj umieszczaj kod, który należy wykonać po zakończeniu pętli głównej************
 	glDeleteTextures(1, &tex);
+	glDeleteTextures(1, &unmasked);
+	glDeleteTextures(1, &one);
+	glDeleteTextures(1, &two);
+	glDeleteTextures(1, &three);
+	glDeleteTextures(1, &four);
+	glDeleteTextures(1, &five);
+	glDeleteTextures(1, &six);
+	glDeleteTextures(1, &seven);
+	glDeleteTextures(1, &eight);
+	glDeleteTextures(1, &bomb);
+	glDeleteTextures(1, &flag);
+	glDeleteTextures(1, &explosion);
+	glDeleteTextures(1, &defused);
+	glDeleteTextures(1, &notMine);
 }
 
 
@@ -380,6 +393,7 @@ void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
+
 	float ratio = (float)width / (float)height; // Proporcje ekranu
 
 	glm::mat4 V = glm::lookAt(cam_pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -422,6 +436,87 @@ void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 	//glfwSwapBuffers(window); //Skopiuj bufor tylny do bufora przedniego
 }
 
+void imguiHandler(GLFWwindow* window) {
+	// Margines od krawędzi ekranu oraz odstęp między okienkami
+	float padding = 15.0f;
+	float spacing = 15.0f;
+
+	// Flagi dla "pływających" okienek
+	ImGuiWindowFlags flags =
+		ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoCollapse |
+		ImGuiWindowFlags_AlwaysAutoResize |
+		ImGuiWindowFlags_NoSavedSettings;
+
+	// --- 1. PIERWSZE OKIENKO (Menu) ---
+	ImGui::SetNextWindowPos(ImVec2(padding, padding), ImGuiCond_Always);
+	ImGui::SetNextWindowBgAlpha(0.6f);
+
+	ImGui::Begin("Menu", nullptr, flags);
+	ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "MENU GRY");
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	if (ImGui::Button("Nowa Gra (ENTER)", ImVec2(120, 30))) {
+		saperGame = std::make_unique<Saper>(cubeSize, bomsAmount);
+		current_angle_x = 0;
+		current_angle_y = 0;
+	}
+
+	// POBIERAMY DANE O ROZMIARZE (przed End!)
+	ImVec2 currentPos = ImGui::GetWindowPos();
+	ImVec2 currentSize = ImGui::GetWindowSize();
+
+	ImGui::End();
+
+
+	// --- 2. DRUGIE OKIENKO (Ustawienia) ---
+	float nextX = currentPos.x + currentSize.x + spacing;
+
+	ImGui::SetNextWindowPos(ImVec2(nextX, padding), ImGuiCond_Always);
+	ImGui::SetNextWindowBgAlpha(0.6f);
+
+	ImGui::Begin("Ustawienia", nullptr, flags);
+	ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "USTAWIENIA");
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	ImGui::PushItemWidth(100.0f); // Ustawia szerokość paska suwaka na 80 pikseli (możesz dostosować tę wartość)
+	ImGui::SliderInt("Rozmiar kostki", &cubeSize, 3, 7);
+	ImGui::SliderInt("Ilosc min", &bomsAmount, 1, int(((cubeSize* cubeSize* cubeSize)-((cubeSize-2)*(cubeSize - 2)*(cubeSize - 2))) * 0.5));
+	ImGui::PopItemWidth(); // Pamiętaj o zamknięciu!
+
+	// POBIERAMY DANE O ROZMIARZE (przed End!)
+	currentPos = ImGui::GetWindowPos();
+	currentSize = ImGui::GetWindowSize();
+
+	ImGui::End();
+
+
+	// --- 3. TRZECIE OKIENKO (Statystyki) ---
+	nextX = currentPos.x + currentSize.x + spacing;
+
+	ImGui::SetNextWindowPos(ImVec2(nextX, padding), ImGuiCond_Always);
+	ImGui::SetNextWindowBgAlpha(0.6f);
+
+	ImGui::Begin("Statystyki", nullptr, flags);
+	ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "STATYSTYKI"); // Zmieniłem kolor na błękitny dla urozmaicenia
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	ImGui::Text("Rozmiar: %d x %d x %d", saperGame->getCubeSize(), saperGame->getCubeSize(), saperGame->getCubeSize());
+	ImGui::Text("Miny ogolem: %d", saperGame->getBombs());
+
+	if (saperGame != nullptr) {
+		int flagsPlaced = saperGame->getFlagsInTotal();
+		ImGui::Text("Oznaczone miny: %d", flagsPlaced);
+	}
+
+	ImGui::End();
+}
+
 int main(void)
 {
 	GLFWwindow* window; //Wskaźnik na obiekt reprezentujący okno
@@ -433,7 +528,7 @@ int main(void)
 		exit(EXIT_FAILURE);
 	}
 
-	window = glfwCreateWindow(500, 500, "OpenGL", NULL, NULL);  //Utwórz okno 500x500 o tytule "OpenGL" i kontekst OpenGL.
+	window = glfwCreateWindow(600, 600, "OpenGL", NULL, NULL);  //Utwórz okno 500x500 o tytule "OpenGL" i kontekst OpenGL.
 
 	if (!window) //Jeżeli okna nie udało się utworzyć, to zamknij program
 	{
@@ -452,38 +547,35 @@ int main(void)
 
 	initOpenGLProgram(window); //Operacje inicjujące
 
-	//Główna pętla
-	float angle_x = 0; //zadeklaruj zmienną przechowującą aktualny kąt obrotu
-	float angle_y = 0; //zadeklaruj zmienną przechowującą aktualny kąt obrotu
+	
 	glfwSetTime(0); //Wyzeruj licznik czasu
 	while (!glfwWindowShouldClose(window)) //Tak długo jak okno nie powinno zostać zamknięte
 	{
-		angle_x += speed_x * glfwGetTime(); //Oblicz kąt o jaki obiekt obrócił się podczas poprzedniej klatki
-		angle_y += speed_y * glfwGetTime(); //Oblicz kąt o jaki obiekt obrócił się podczas poprzedniej klatki
+		current_angle_x += speed_x * glfwGetTime(); //Oblicz kąt o jaki obiekt obrócił się podczas poprzedniej klatki
+		current_angle_y += speed_y * glfwGetTime(); //Oblicz kąt o jaki obiekt obrócił się podczas poprzedniej klatki
 
 		// Blokuj wychylenie powyżej/poniżej 89 stopni (~1.55 radiana), 
 		// żeby kamera nie przeleciała wertykalnie na drugą stronę osi!
-		if (angle_x > 1.5f) angle_x = 1.5f;
-		if (angle_x < -1.5f) angle_x = -1.5f;
+		if (current_angle_x > 1.5f) current_angle_x = 1.5f;
+		if (current_angle_x < -1.5f) current_angle_x = -1.5f;
 
-		current_angle_x = angle_x; // Aktualizuj dla raycastu!
-		current_angle_y = angle_y; // Aktualizuj dla raycastu!
 
 		glfwSetTime(0); //Wyzeruj licznik czasu
+
+		int winW, winH;
+		glfwGetWindowSize(window, &winW, &winH);
+
+		// Proste skalowanie: jeśli wysokość ekranu jest większa niż 800px, powiększ UI
+		float scaleFactor = (winH > 800) ? (winH / 800.0f) : 1.0f;
+		ImGui::GetIO().FontGlobalScale = scaleFactor;
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+		imguiHandler(window);
 
-		ImGui::Begin("Moje Pierwsze Okno");
-
-		ImGui::Text("Siemanko! To jest czyste okienko ImGui.");
-		ImGui::Text("Twoje zmienne do zabawy: cubeSize (%d), bomsAmount (%d)", cubeSize, bomsAmount);
-
-		ImGui::End();
-
-		drawScene(window, angle_x, angle_y); //Wykonaj procedurę rysującą
+		drawScene(window, current_angle_x, current_angle_y);
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
