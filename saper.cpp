@@ -83,6 +83,9 @@ void Saper::revealAll()
 				if (isFlagged(i, j, k) && !isBomb(i, j, k)) {
 					setNotMine(i, j, k);
 				}
+				else if(isFlagged(i, j, k)){
+					setFlagged(i, j, k, false);
+				}
 				setHidden(i, j, k, false);
 			}
 		}

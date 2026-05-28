@@ -426,6 +426,7 @@ void drawScene(GLFWwindow* window, float angle_x, float angle_y) {
 
 				// Skalowanie malej komorki
 				Model_local = glm::scale(Model_local, glm::vec3(0.5f)); // Troche pomniejszamy bazowy model myCube
+				Model_local = glm::rotate(Model_local, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 				// Rysowanie zaleznie od odkrycia komorki
 				Cell currentCell = saperGame->getCell(x, y, z);
